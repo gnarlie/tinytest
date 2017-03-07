@@ -3,13 +3,13 @@
 #include "../tinytest.h"
 #include "myfunctions.h"
 
-void test_addition()
+TEST(test_addition)
 {
   ASSERT_EQUALS(10, add_numbers(3, 7));
   ASSERT_EQUALS(-10, add_numbers(4, -14));
 }
 
-void test_that_fails()
+TEST(test_that_fails)
 {
   /* this assertion fails - to demonstrate what happens */
   ASSERT_EQUALS(10, add_numbers(3, 33));
@@ -17,7 +17,7 @@ void test_that_fails()
   ASSERT_EQUALS(10, add_numbers(3, 7));
 }
 
-void test_multiplication()
+TEST(test_multiplication)
 {
   ASSERT_EQUALS(12, multiply_numbers(3, 4));
   ASSERT_EQUALS(-12, multiply_numbers(4, -3));
@@ -26,8 +26,5 @@ void test_multiplication()
 /* test runner */
 int main()
 {
-  RUN(test_addition);
-  RUN(test_that_fails);
-  RUN(test_multiplication);
-  return TEST_REPORT();
+  return tt_run_all();
 }
