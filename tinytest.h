@@ -51,13 +51,16 @@
 #include <string.h>
 
 /* Main assertion method */
-#define ASSERT(msg, expression) if (!tt_assert(__FILE__, __LINE__, (msg), (#expression), (expression) ? 1 : 0)) return
+#define TT_ASSERT(msg, expression, evaluated) if (!tt_assert(__FILE__, __LINE__, (msg), (#expression), (evaluated) ? 1 : 0)) return;
+#define ASSERT(msg, expression) TT_ASSERT(msg, expression, (expression))
 
 /* Convenient assertion methods */
 /* TODO: Generate readable error messages for assert_equals or assert_str_equals */
 #define ASSERT_EQUALS(expected, actual) ASSERT((#actual), (expected) == (actual))
+
 #define ASSERT_STRING_EQUALS(expected, actual) ASSERT((actual), strcmp((expected),(actual)) == 0)
-#define ASSERT_INT_EQUALS(expected, actual) ASSERT(tt_to_str(#actual " is %d, expected", (actual)), (expected) == (actual))
+
+#define ASSERT_INT_EQUALS(expected, actual) {int a = (actual), e = (expected); TT_ASSERT(tt_to_str(#actual " is %d, expected %s, which is %d", a, #expected, e), expected == actual, a == e);}
 
 #define TEST_REPORT() tt_report()
 
@@ -97,9 +100,22 @@ static void tt_register(const char* name, const char * suite, void (*test_functi
     at->name = name;
     at->suite = suite;
     at->test_function = test_function;
-    at->next = tt_head;
 
-    tt_head = at;
+    struct tt_test *after = tt_head, *before = NULL;
+    while (after && strcmp(after->suite, suite) < 0) {
+        before = after;
+        after = after->next;
+    }
+
+    at->next = after;
+    if (before)
+    {
+        before->next = at;
+    }
+    else
+    {
+        tt_head = at;
+    }
 }
 
 static void tt_execute(const char* name, void (*test_function)())
@@ -156,7 +172,8 @@ static const char * tt_to_str(const char * fmt, ...)
     return buf;
 }
 
-static int tt_run_all() {
+static int tt_run_all()
+{
     int rc = 0;
 
     for (struct tt_test* t = tt_head; t; t = t->next) {
@@ -164,6 +181,12 @@ static int tt_run_all() {
         if (!t->next || 0 != strcmp(t->next->suite, t->suite)) {
             rc |= TEST_REPORT();
         }
+    }
+
+    while (tt_head) {
+        struct tt_test * t = tt_head;
+        tt_head = t->next;
+        free(t);
     }
 
     return rc;
